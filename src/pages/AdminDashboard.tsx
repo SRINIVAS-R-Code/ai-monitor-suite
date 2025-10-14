@@ -8,9 +8,10 @@ import { Employee, AttendanceRecord } from "@/types";
 
 interface AdminDashboardProps {
   onLogout: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
+const AdminDashboard = ({ onLogout, onNavigate }: AdminDashboardProps) => {
   const employees: Employee[] = [
     {
       id: 1,
@@ -78,7 +79,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role="admin" activePage="dashboard" />
+      <Sidebar role="admin" activePage="dashboard" onNavigate={onNavigate} />
       
       <div className="flex-1">
         <Navbar userName="Admin" onLogout={onLogout} />

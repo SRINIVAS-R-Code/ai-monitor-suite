@@ -8,9 +8,10 @@ import { AttendanceRecord } from "@/types";
 
 interface UserDashboardProps {
   onLogout: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const UserDashboard = ({ onLogout }: UserDashboardProps) => {
+const UserDashboard = ({ onLogout, onNavigate }: UserDashboardProps) => {
   const recentAttendance: AttendanceRecord[] = [
     {
       id: 1,
@@ -43,7 +44,7 @@ const UserDashboard = ({ onLogout }: UserDashboardProps) => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role="user" activePage="dashboard" />
+      <Sidebar role="user" activePage="dashboard" onNavigate={onNavigate} />
       
       <div className="flex-1">
         <Navbar userName="Srinivas" onLogout={onLogout} />

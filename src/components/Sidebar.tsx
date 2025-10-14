@@ -4,9 +4,10 @@ import { UserRole } from "@/types";
 interface SidebarProps {
   role: UserRole;
   activePage?: string;
+  onNavigate?: (page: string) => void;
 }
 
-const Sidebar = ({ role, activePage = "dashboard" }: SidebarProps) => {
+const Sidebar = ({ role, activePage = "dashboard", onNavigate }: SidebarProps) => {
   const commonLinks = [
     { name: "Dashboard", icon: LayoutDashboard, path: "dashboard" },
     { name: "Attendance", icon: Clock, path: "attendance" },
@@ -42,6 +43,7 @@ const Sidebar = ({ role, activePage = "dashboard" }: SidebarProps) => {
             return (
               <li key={link.name}>
                 <button
+                  onClick={() => onNavigate?.(link.path)}
                   className={`
                     w-full flex items-center gap-3 px-4 py-3 rounded-lg
                     transition-base font-medium
