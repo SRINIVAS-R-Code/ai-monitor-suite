@@ -132,7 +132,7 @@ const UserSettings = ({ onLogout, onNavigate }: UserSettingsProps) => {
               </div>
               <h2 className="text-xl font-bold text-foreground">Preferences</h2>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -140,7 +140,12 @@ const UserSettings = ({ onLogout, onNavigate }: UserSettingsProps) => {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
-                    onClick={() => setPreferences({ ...preferences, theme: "light" })}
+                    onClick={() => {
+                      setPreferences({ ...preferences, theme: "light" });
+                      // Apply theme globally
+                      document.documentElement.classList.remove('dark');
+                      localStorage.setItem('theme', 'light');
+                    }}
                     className={`p-4 rounded-lg border transition-base ${
                       preferences.theme === "light"
                         ? "border-primary bg-primary/10"
@@ -151,7 +156,12 @@ const UserSettings = ({ onLogout, onNavigate }: UserSettingsProps) => {
                     <p className="font-medium">Light</p>
                   </button>
                   <button
-                    onClick={() => setPreferences({ ...preferences, theme: "dark" })}
+                    onClick={() => {
+                      setPreferences({ ...preferences, theme: "dark" });
+                      // Apply theme globally
+                      document.documentElement.classList.add('dark');
+                      localStorage.setItem('theme', 'dark');
+                    }}
                     className={`p-4 rounded-lg border transition-base ${
                       preferences.theme === "dark"
                         ? "border-primary bg-primary/10"
@@ -162,6 +172,22 @@ const UserSettings = ({ onLogout, onNavigate }: UserSettingsProps) => {
                     <p className="font-medium">Dark</p>
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Language
+                </label>
+                <select
+                  value={preferences.language}
+                  onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                </select>
               </div>
             </div>
           </div>

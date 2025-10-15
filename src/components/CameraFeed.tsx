@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Video, VideoOff, RefreshCw } from "lucide-react";
+import { Camera, Video, VideoOff, RefreshCw, Circle, Square, Download, Play } from "lucide-react";
 import { toast } from "sonner";
 
 interface CameraFeedProps {
@@ -8,24 +8,50 @@ interface CameraFeedProps {
   showOverlay?: boolean;
 }
 
+interface FaceDetection {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+  emotion?: string;
+  age?: number;
+}
+
 const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const [isActive, setIsActive] = useState(false);
-  const [detections, setDetections] = useState<number>(0);
+  const [detections, setDetections] = useState<FaceDetection[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
 
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720 }
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsActive(true);
-        
-        // Simulate face detection
+
+        // Enhanced face detection simulation
         const interval = setInterval(() => {
-          setDetections(Math.floor(Math.random() * 5));
+          const numDetections = Math.floor(Math.random() * 4) + 1;
+          const newDetections: FaceDetection[] = Array.from({ length: numDetections }, (_, i) => ({
+            id: i + 1,
+            x: Math.random() * 60 + 20, // 20-80% of width
+            y: Math.random() * 40 + 30, // 30-70% of height
+            width: 120 + Math.random() * 60, // 120-180px
+            height: 160 + Math.random() * 80, // 160-240px
+            confidence: 85 + Math.random() * 15, // 85-100%
+            emotion: ['happy', 'neutral', 'focused'][Math.floor(Math.random() * 3)],
+            age: 25 + Math.floor(Math.random() * 30) // 25-55
+          }));
+          setDetections(newDetections);
         }, 2000);
 
         return () => clearInterval(interval);
@@ -42,7 +68,53 @@ const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProp
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
       setIsActive(false);
-      setDetections(0);
+      setDetections([]);
+    }
+  };
+
+  const startRecording = () => {
+    if (!videoRef.current?.srcObject) return;
+
+    const stream = videoRef.current.srcObject as MediaStream;
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType: 'video/webm;codecs=vp9'
+    });
+
+    recordedChunksRef.current = [];
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      setRecordedVideo(url);
+      toast.success("Recording saved successfully");
+    };
+
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const downloadRecording = () => {
+    if (recordedVideo) {
+      const a = document.createElement('a');
+      a.href = recordedVideo;
+      a.download = `recording-${cameraId}-${new Date().toISOString().split('T')[0]}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Recording downloaded");
     }
   };
 
@@ -68,7 +140,7 @@ const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProp
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
               <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
               <span className="text-sm font-medium text-success">
-                {detections} {detections === 1 ? 'person' : 'people'}
+                {detections.length} {detections.length === 1 ? 'person' : 'people'}
               </span>
             </div>
           )}
@@ -98,6 +170,29 @@ const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProp
               >
                 <RefreshCw className="h-5 w-5 text-foreground" />
               </button>
+              {!isRecording ? (
+                <button
+                  onClick={startRecording}
+                  className="p-2 rounded-lg hover:bg-muted transition-base"
+                >
+                  <Circle className="h-5 w-5 text-destructive" />
+                </button>
+              ) : (
+                <button
+                  onClick={stopRecording}
+                  className="p-2 rounded-lg hover:bg-muted transition-base animate-pulse"
+                >
+                  <Square className="h-4 w-4 text-destructive bg-destructive rounded-sm" />
+                </button>
+              )}
+              {recordedVideo && (
+                <button
+                  onClick={downloadRecording}
+                  className="p-2 rounded-lg hover:bg-muted transition-base"
+                >
+                  <Download className="h-5 w-5 text-primary" />
+                </button>
+              )}
             </>
           )}
         </div>
@@ -124,21 +219,31 @@ const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProp
               className="w-full h-full object-cover"
             />
             
-            {showOverlay && detections > 0 && (
+            {showOverlay && detections.length > 0 && (
               <div className="absolute inset-0 pointer-events-none">
-                {Array.from({ length: detections }).map((_, i) => (
+                {detections.map((detection, i) => (
                   <div
-                    key={i}
+                    key={detection.id}
                     className="absolute border-2 border-primary rounded-lg"
                     style={{
-                      left: `${20 + i * 25}%`,
-                      top: `${30 + i * 10}%`,
-                      width: '150px',
-                      height: '200px',
+                      left: `${detection.x}%`,
+                      top: `${detection.y}%`,
+                      width: `${detection.width}px`,
+                      height: `${detection.height}px`,
                     }}
                   >
                     <div className="absolute -top-8 left-0 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded">
-                      Person {i + 1} • 98%
+                      Person {detection.id} • {detection.confidence.toFixed(1)}%
+                      {detection.emotion && (
+                        <span className="ml-1 text-xs opacity-80">
+                          • {detection.emotion}
+                        </span>
+                      )}
+                      {detection.age && (
+                        <span className="ml-1 text-xs opacity-80">
+                          • ~{detection.age}y
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -158,7 +263,7 @@ const CameraFeed = ({ cameraId, cameraName, showOverlay = true }: CameraFeedProp
         <div className="p-4 border-t border-border bg-muted/30">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-foreground">{detections}</p>
+              <p className="text-2xl font-bold text-foreground">{detections.length}</p>
               <p className="text-xs text-muted-foreground">Detected</p>
             </div>
             <div>

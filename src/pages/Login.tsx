@@ -3,7 +3,7 @@ import { Eye, EyeOff, Brain, Sparkles } from "lucide-react";
 import { UserRole } from "@/types";
 
 interface LoginProps {
-  onLogin: (role: UserRole) => void;
+   onLogin: (role: UserRole, name?: string) => void;
 }
 
 const Login = ({ onLogin }: LoginProps) => {
@@ -14,12 +14,12 @@ const Login = ({ onLogin }: LoginProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Simple role determination based on username
     if (username.toLowerCase() === "admin") {
-      onLogin("admin");
+      onLogin("admin", username);
     } else {
-      onLogin("user");
+      onLogin("user", username);
     }
   };
 
